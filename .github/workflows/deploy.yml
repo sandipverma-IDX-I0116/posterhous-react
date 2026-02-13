@@ -33,15 +33,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # - name: SonarQube Scan
-      #   uses: sonarsource/sonarqube-scan-action@v3
-      #   env:
-      #     SONAR_HOST_URL: https://sonar.indexnine.com
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Install dependencies
-        run: npm run test:run
+        # - name: SonarQube Scan
+        #   uses: sonarsource/sonarqube-scan-action@v3
+        #   env:
+        #     SONAR_HOST_URL: https://sonar.indexnine.com
+        #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+      - name: Run tests
+        run: npm test
+      
       - name: Build React app
         run: npm run build
 
@@ -49,6 +50,12 @@ jobs:
         run: |
           echo "BUILD_PATH=$(pwd)/dist" >> $GITHUB_ENV
           echo "✅ Build available at: $(pwd)/dist"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: dist/
 
   cd:
     name: Deploy to Production
@@ -62,13 +69,8 @@ jobs:
     steps:
       - name: Verify build exists
         run: |
-          if [ ! -d "dist" ]; then
-            echo "❌ Build directory not found!"
-            echo "This might happen if the runner cleaned up between jobs."
-            exit 1
-          fi
-          echo "✅ Build directory found"
-          ls -la dist/
+          echo "Downloading build artifact..."
+          ls -la
 
       - name: Deploy application
         run: |
@@ -78,7 +80,7 @@ jobs:
           echo "🧹 Clearing existing deployment..."
           rm -rf "$DEPLOY_DIR"/*
           echo "📦 Copying new build files..."
-          cp -r ./dist/* "$DEPLOY_DIR/"
+          cp -r ./build-dist/* "$DEPLOY_DIR/"
           chmod -R 755 "$DEPLOY_DIR"
           echo "✅ Files deployed successfully to $DEPLOY_DIR"
           echo "📁 Deployed files:"
@@ -95,3 +97,9 @@ jobs:
           echo "🔖 Commit: ${{ github.sha }}"
           echo "👤 Triggered by: ${{ github.actor }}"
           echo "=============================================="
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-dist
+          path: build-dist
