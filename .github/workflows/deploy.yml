@@ -67,10 +67,20 @@ jobs:
       # url: http://localhost:3000
 
     steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-dist
+          path: build-dist
+
       - name: Verify build exists
         run: |
-          echo "Downloading build artifact..."
-          ls -la
+          if [ ! -d "build-dist" ]; then
+            echo "❌ Build artifact directory not found!"
+            exit 1
+          fi
+          echo "✅ Build artifact directory found"
+          ls -la build-dist/
 
       - name: Deploy application
         run: |
@@ -97,9 +107,3 @@ jobs:
           echo "🔖 Commit: ${{ github.sha }}"
           echo "👤 Triggered by: ${{ github.actor }}"
           echo "=============================================="
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-dist
-          path: build-dist
